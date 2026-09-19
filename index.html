@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   :root {
     --bg: #15100b;
@@ -22,6 +24,7 @@
     --c-r: #5fa3d0;
     --c-sr: #b478e0;
     --c-ur: #f2b705;
+    --warn: #d9776a;
     --radius: 14px;
   }
 
@@ -50,7 +53,7 @@
 
   header.page-head {
     text-align: center;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   header.page-head h1 {
@@ -66,6 +69,40 @@
     margin: 0;
     color: var(--text-dim);
     font-size: 13.5px;
+  }
+
+  .config-warning {
+    display: none;
+    background: rgba(217,119,106,0.12);
+    border: 1px solid rgba(217,119,106,0.5);
+    color: #f0c9c3;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+  .config-warning code {
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  .sync-status {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    letter-spacing: 0.04em;
+  }
+  .sync-status.connected::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6fbf73;
+    margin-right: 6px;
   }
 
   .set {
@@ -250,6 +287,25 @@
 
   .editor-body { padding: 0 18px 18px; }
 
+  .undo-redo-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .undo-redo-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--panel-line);
+    color: var(--text-dim);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .undo-redo-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .undo-redo-btn:disabled { opacity: 0.35; cursor: default; }
+
   .editor-note {
     font-size: 12.5px;
     line-height: 1.7;
@@ -289,47 +345,96 @@
     color: var(--accent);
   }
 
-  textarea.pool-edit {
-    width: 100%;
-    height: 220px;
-    resize: vertical;
+  .pool-rows {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .pool-rows.active { display: flex; }
+
+  .pool-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .pool-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
     background: var(--screen);
     color: var(--text);
     border: 1px solid var(--panel-line);
-    border-radius: 10px;
-    padding: 12px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .pool-row input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+  .pool-row select {
+    background: var(--screen);
+    color: var(--text);
+    border: 1px solid var(--panel-line);
+    border-radius: 8px;
+    padding: 8px 4px;
     font-size: 12.5px;
-    line-height: 1.6;
+    font-family: inherit;
+    width: 66px;
+    flex-shrink: 0;
+  }
+
+  .rate-summary {
     display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
   }
-  textarea.pool-edit.active { display: block; }
+  .rate-summary.active { display: flex; }
 
-  .editor-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .editor-actions button {
-    padding: 9px 16px;
-    border-radius: 999px;
-    font-size: 12.5px;
+  .rate-pill {
+    font-size: 11.5px;
     font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
   }
+  .rate-pill.rate-C { color: var(--c-c); background: rgba(143,133,122,0.16); border: 1px solid rgba(143,133,122,0.4); }
+  .rate-pill.rate-R { color: var(--c-r); background: rgba(95,163,208,0.16); border: 1px solid rgba(95,163,208,0.45); }
+  .rate-pill.rate-SR { color: var(--c-sr); background: rgba(180,120,224,0.18); border: 1px solid rgba(180,120,224,0.5); }
+  .rate-pill.rate-UR { color: var(--c-ur); background: rgba(242,183,5,0.18); border: 1px solid rgba(242,183,5,0.55); }
+  .rate-empty { font-size: 11.5px; color: var(--text-dim); }
 
-  .btn-save {
-    background: var(--accent);
-    color: #1b1208;
+  .row-del {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--panel-line);
+    color: var(--warn);
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .btn-reset {
-    background: transparent;
+  .row-del:hover { border-color: var(--warn); }
+
+  .add-row-btn {
+    margin-top: 12px;
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    background: var(--bg-2);
+    border: 1px dashed var(--panel-line);
     color: var(--text-dim);
-    border: 1px solid var(--panel-line) !important;
+    font-size: 13px;
+    font-weight: 600;
   }
-  .btn-reset:hover { color: #d9776a; border-color: #d9776a !important; }
-
-  .save-flash { font-size: 12px; color: var(--accent); margin-top: 8px; min-height: 14px; }
+  .add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .add-row-btn:disabled { opacity: 0.4; cursor: default; }
 
   footer.hint {
     text-align: center;
@@ -345,8 +450,14 @@
 
   <header class="page-head">
     <h1>ランダムポケットタイトルガチャ</h1>
-    <p>単語プールから架空のラジオタイトルを引き当てよう</p>
+    <p>スプレッドシートと挙動は同じです。スプレッドシートのURL: https://docs.google.com/spreadsheets/d/1t_4ere3SmVp_QPwpzk2344buao7b09ZWTtjSzYs1K18/edit?usp=sharing</p>
   </header>
+
+  <div class="config-warning" id="configWarning">
+    &#9888;&#65039; firebaseConfig が未設定です。（設定するまでガチャ・編集は動きません）。
+  </div>
+
+  <p class="sync-status" id="syncStatus">接続中…</p>
 
   <section class="set" id="gachaSet">
     <div class="dial-row">
@@ -366,7 +477,7 @@
     </div>
 
     <div class="controls">
-      <button class="draw-btn" id="drawBtn">ガチャを引く</button>
+      <button class="draw-btn" id="drawBtn" disabled>ガチャを引く</button>
       <button class="icon-btn" id="speakBtn" title="読み上げ" disabled>&#128266;</button>
       <button class="icon-btn" id="copyBtn" title="コピー" disabled>&#128203;</button>
     </div>
@@ -376,74 +487,187 @@
   <details class="editor">
     <summary>単語プールを編集する <span class="chev">&#9656;</span></summary>
     <div class="editor-body">
+      <div class="undo-redo-row">
+        <button type="button" class="undo-redo-btn" id="undoBtn" disabled>&#8630; 元に戻す</button>
+        <button type="button" class="undo-redo-btn" id="redoBtn" disabled>&#8631; やり直す</button>
+      </div>
+
       <p class="editor-note">
-        1行に <code>単語&#9;レア度&#9;重み</code> をタブ区切りで入力（スプレッドシートからのコピペもそのまま貼り付け可）。
-        レア度は <code>C</code> <code>R</code> <code>SR</code> <code>UR</code> が使えます。
+        単語プールはクラウド上でみんなと共有されています。ここでの変更は保存操作なしですぐに全員の画面に反映されます(そのはずです。自信はないです)。
+        出現しやすさはレア度を選ぶと自動で設定されます。
+        <code>Ctrl+Z</code>（Macは<code>&#8984;+Z</code>）で、自分が直前に行った操作を取り消せます
+        （他の人の編集内容までは取り消せません）。
         EXタブのテンプレート内では <code>{U1}{U2}{U3}</code>（上の句）<code>{L1}{L2}{L3}</code>（下の句）
         <code>{F1}{F2}{F3}</code>（上の句＋下の句）<code>{W1}〜{W5}</code>（曜日）が使えます。
-        保存はこの端末のブラウザ内だけに残ります。壊しても「初期状態に戻す」でいつでも元に戻せます。
       </p>
 
       <div class="tabs" id="tabRow"></div>
 
-      <div id="textareaRow"></div>
+      <div id="rateSummaryRow"></div>
 
-      <div class="editor-actions">
-        <button class="btn-save" id="saveBtn">保存する</button>
-        <button class="btn-reset" id="resetBtn">初期状態に戻す</button>
-      </div>
-      <p class="save-flash" id="saveFlash"></p>
+      <div id="poolTables"></div>
+
+      <button class="add-row-btn" id="addRowBtn" type="button" disabled>＋ 単語を追加</button>
     </div>
   </details>
 
   <footer class="hint">
-    このページは静的なHTML1枚で完結しています。GitHub Pagesにそのまま置けば友達とURLを共有できます。
+    ルールなんてないです
   </footer>
 
 </main>
 
 <script>
+/* =========================================================
+   Firebase設定
+   Firebaseコンソール > プロジェクト設定 > 全般 > マイアプリ
+   の firebaseConfig をここに貼り付ける。
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBGduKm3GgESXUZJxqtJBA5KKbLeWY31yQ",
+  authDomain: "pocket-gacha-7c339.firebaseapp.com",
+  databaseURL: "https://pocket-gacha-7c339-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pocket-gacha-7c339",
+  storageBucket: "pocket-gacha-7c339.firebasestorage.app",
+  messagingSenderId: "131499028392",
+  appId: "1:131499028392:web:32b19a66756686e594379d"
+};
+
 const POOL_NAMES = ["上の句", "下の句", "曜日", "EX"];
-const DEFAULT_POOLS = {"上の句": [{"word": "審判の", "rarity": "C", "weight": 10.0}, {"word": "隣の", "rarity": "C", "weight": 10.0}, {"word": "ダンシング", "rarity": "C", "weight": 10.0}, {"word": "そんなお前に", "rarity": "C", "weight": 10.0}, {"word": "国家元首が", "rarity": "C", "weight": 10.0}, {"word": "上司の股間に", "rarity": "R", "weight": 5.0}, {"word": "有無を言わさず", "rarity": "C", "weight": 10.0}, {"word": "500gは", "rarity": "C", "weight": 10.0}, {"word": "魔法少女は", "rarity": "C", "weight": 10.0}, {"word": "流石に", "rarity": "C", "weight": 10.0}, {"word": "夢見る少女の", "rarity": "C", "weight": 10.0}, {"word": "BUMP OF ", "rarity": "C", "weight": 10.0}, {"word": "多感な時期の", "rarity": "C", "weight": 10.0}, {"word": "夕焼けの", "rarity": "C", "weight": 10.0}, {"word": "港区立", "rarity": "C", "weight": 10.0}, {"word": "万有引力の", "rarity": "C", "weight": 10.0}, {"word": "から紅の", "rarity": "C", "weight": 10.0}, {"word": "アリさんマークの", "rarity": "C", "weight": 10.0}, {"word": "おいでやす", "rarity": "C", "weight": 10.0}, {"word": "東京高等", "rarity": "C", "weight": 10.0}, {"word": "お尻で作る", "rarity": "C", "weight": 10.0}, {"word": "お手軽", "rarity": "C", "weight": 10.0}, {"word": "トリオ・ザ・", "rarity": "C", "weight": 10.0}, {"word": "9回裏の", "rarity": "C", "weight": 10.0}, {"word": "ネオ", "rarity": "C", "weight": 10.0}, {"word": "鎖鎌の", "rarity": "C", "weight": 10.0}, {"word": "エレクトリカル", "rarity": "C", "weight": 10.0}, {"word": "トーキョー", "rarity": "C", "weight": 10.0}, {"word": "崖の上の", "rarity": "C", "weight": 10.0}, {"word": "ネタバレ", "rarity": "C", "weight": 10.0}, {"word": "暮らしとファッションの", "rarity": "C", "weight": 10.0}, {"word": "養老の", "rarity": "C", "weight": 10.0}, {"word": "デイアフター", "rarity": "C", "weight": 10.0}, {"word": "信州名物", "rarity": "C", "weight": 10.0}, {"word": "この日先発の", "rarity": "C", "weight": 10.0}, {"word": "立直一発", "rarity": "C", "weight": 10.0}, {"word": "オペラ座の", "rarity": "C", "weight": 10.0}, {"word": "イタリアン", "rarity": "C", "weight": 10.0}, {"word": "森田一義アワー", "rarity": "C", "weight": 10.0}, {"word": "尿道に学ぶ", "rarity": "R", "weight": 5.0}, {"word": "8番出口からの", "rarity": "C", "weight": 10.0}, {"word": "新発売！トイレに流せる", "rarity": "C", "weight": 10.0}, {"word": "連続テレビ小説", "rarity": "C", "weight": 10.0}, {"word": "揺れる", "rarity": "C", "weight": 10.0}, {"word": "踊る", "rarity": "C", "weight": 10.0}, {"word": "映画ドラえもん　新のび太の", "rarity": "C", "weight": 10.0}, {"word": "チピチピチャパチャパ", "rarity": "C", "weight": 10.0}, {"word": "映画クレヨンしんちゃん　嵐を呼ぶ", "rarity": "C", "weight": 10.0}, {"word": "火曜サスペンス劇場", "rarity": "C", "weight": 10.0}, {"word": "その正体は", "rarity": "C", "weight": 10.0}, {"word": "上海から", "rarity": "C", "weight": 10.0}, {"word": "MISIAの髪型についての", "rarity": "C", "weight": 10.0}, {"word": "デイリー", "rarity": "C", "weight": 10.0}, {"word": "週刊", "rarity": "C", "weight": 10.0}, {"word": "奇跡体験！", "rarity": "C", "weight": 10.0}, {"word": "長崎市にお住まいの", "rarity": "C", "weight": 10.0}, {"word": "コロラド州の", "rarity": "C", "weight": 10.0}, {"word": "朝まで生", "rarity": "C", "weight": 10.0}, {"word": "サントリー", "rarity": "C", "weight": 10.0}, {"word": "突然の", "rarity": "C", "weight": 10.0}, {"word": "世田谷育ちの", "rarity": "C", "weight": 10.0}, {"word": "10代目", "rarity": "C", "weight": 10.0}, {"word": "オールドルーキーの", "rarity": "C", "weight": 10.0}, {"word": "前科アリの", "rarity": "C", "weight": 10.0}, {"word": "脚力の", "rarity": "C", "weight": 10.0}, {"word": "実力の", "rarity": "C", "weight": 10.0}, {"word": "太鼓持ちの", "rarity": "C", "weight": 10.0}, {"word": "搾りたての", "rarity": "C", "weight": 10.0}, {"word": "おちんちん", "rarity": "SR", "weight": 3.0}, {"word": "慈雨の", "rarity": "C", "weight": 10.0}, {"word": "動物と話せる女性", "rarity": "C", "weight": 10.0}, {"word": "蛇腹の", "rarity": "C", "weight": 10.0}, {"word": "怨嗟響めく", "rarity": "C", "weight": 10.0}, {"word": "この支配からの", "rarity": "C", "weight": 10.0}, {"word": "菩提樹の下の", "rarity": "C", "weight": 10.0}, {"word": "生きて腸まで届く", "rarity": "C", "weight": 10.0}, {"word": "じんわり染み出る", "rarity": "C", "weight": 10.0}, {"word": "ババア特製", "rarity": "C", "weight": 10.0}, {"word": "正真正銘", "rarity": "C", "weight": 10.0}, {"word": "痺れる", "rarity": "C", "weight": 10.0}, {"word": "さんまの", "rarity": "C", "weight": 10.0}, {"word": "憂国の", "rarity": "C", "weight": 10.0}, {"word": "熱血！", "rarity": "C", "weight": 10.0}, {"word": "いびつな", "rarity": "C", "weight": 10.0}, {"word": "なんと見事な", "rarity": "C", "weight": 10.0}, {"word": "ビギニング・オブ・", "rarity": "C", "weight": 10.0}, {"word": "裏", "rarity": "C", "weight": 10.0}, {"word": "電脳", "rarity": "C", "weight": 10.0}, {"word": "青い", "rarity": "C", "weight": 10.0}, {"word": "黒い", "rarity": "C", "weight": 10.0}, {"word": "汚ねえ", "rarity": "C", "weight": 10.0}, {"word": "平成最後の", "rarity": "C", "weight": 10.0}, {"word": "あたたか〜い", "rarity": "C", "weight": 10.0}, {"word": "国王直属の", "rarity": "C", "weight": 10.0}, {"word": "ディアルガ VS パルキア VS ", "rarity": "C", "weight": 10.0}, {"word": "カスみてぇな", "rarity": "C", "weight": 10.0}, {"word": "日就寮の", "rarity": "C", "weight": 10.0}, {"word": "令和", "rarity": "C", "weight": 10.0}, {"word": "君の心に", "rarity": "C", "weight": 10.0}, {"word": "代打", "rarity": "C", "weight": 10.0}, {"word": "あの鐘をならすのは", "rarity": "C", "weight": 10.0}, {"word": "下人の行方は", "rarity": "C", "weight": 10.0}, {"word": "人はみな", "rarity": "C", "weight": 10.0}, {"word": "かわE超えて", "rarity": "C", "weight": 10.0}, {"word": "健康第一に", "rarity": "C", "weight": 10.0}, {"word": "8時だよ！", "rarity": "C", "weight": 10.0}, {"word": "荒波に揉まれた", "rarity": "C", "weight": 10.0}, {"word": "レッドホットチリ", "rarity": "C", "weight": 10.0}, {"word": "金玉キラキラ", "rarity": "SR", "weight": 3.0}, {"word": "おいこの", "rarity": "C", "weight": 10.0}, {"word": "お通しの", "rarity": "C", "weight": 10.0}, {"word": "ぬるぬる", "rarity": "C", "weight": 10.0}, {"word": "ヌーディスト", "rarity": "R", "weight": 5.0}, {"word": "サバイバル", "rarity": "C", "weight": 10.0}, {"word": "ダイナマイト", "rarity": "C", "weight": 10.0}, {"word": "ハレーション", "rarity": "C", "weight": 10.0}, {"word": "バイオレンス", "rarity": "C", "weight": 10.0}, {"word": "クライマックス", "rarity": "C", "weight": 10.0}, {"word": "ヒステリック", "rarity": "C", "weight": 10.0}, {"word": "星野リゾート", "rarity": "C", "weight": 10.0}, {"word": "宮内庁御用達", "rarity": "C", "weight": 10.0}, {"word": "惑星最高の", "rarity": "C", "weight": 10.0}, {"word": "タナカ", "rarity": "C", "weight": 10.0}, {"word": "毒の", "rarity": "C", "weight": 10.0}, {"word": "サイバー", "rarity": "C", "weight": 10.0}, {"word": "光り輝く", "rarity": "C", "weight": 10.0}, {"word": "そびえ立つ", "rarity": "C", "weight": 10.0}, {"word": "リアル", "rarity": "C", "weight": 10.0}, {"word": "バーチャル", "rarity": "C", "weight": 10.0}, {"word": "2.5次元", "rarity": "C", "weight": 10.0}, {"word": "冷蔵庫の残りもんで作った", "rarity": "C", "weight": 10.0}, {"word": "魂の", "rarity": "C", "weight": 10.0}, {"word": "白い光の中に", "rarity": "C", "weight": 10.0}, {"word": "ラマダン中の", "rarity": "C", "weight": 10.0}, {"word": "三刀流", "rarity": "C", "weight": 10.0}, {"word": "隻おきんたまの", "rarity": "SR", "weight": 3.0}, {"word": "なんと奇遇な！", "rarity": "R", "weight": 5.0}, {"word": "バッター、大谷に代わりまして", "rarity": "C", "weight": 10.0}, {"word": "スタジオ", "rarity": "C", "weight": 10.0}, {"word": "Adobe", "rarity": "C", "weight": 10.0}, {"word": "隻腕の", "rarity": "C", "weight": 10.0}, {"word": "隻眼の", "rarity": "C", "weight": 10.0}, {"word": "大阪", "rarity": "C", "weight": 10.0}, {"word": "都の", "rarity": "C", "weight": 10.0}, {"word": "魁！", "rarity": "C", "weight": 10.0}, {"word": "ウルトラマン", "rarity": "C", "weight": 10.0}, {"word": "オオグンタマの", "rarity": "C", "weight": 10.0}, {"word": "水でふやけた", "rarity": "C", "weight": 10.0}, {"word": "ヒョギフ大統領の", "rarity": "C", "weight": 10.0}, {"word": "森に巣くう", "rarity": "C", "weight": 10.0}, {"word": "巡り合う", "rarity": "C", "weight": 10.0}, {"word": "天使と悪魔の", "rarity": "C", "weight": 10.0}, {"word": "ボーイ・ミーツ・", "rarity": "C", "weight": 10.0}, {"word": "オホーツクに消ゆる", "rarity": "C", "weight": 10.0}, {"word": "おちんちんいっぱい", "rarity": "SR", "weight": 3.0}, {"word": "おっぱいいっぱい", "rarity": "SR", "weight": 3.0}, {"word": "星野源の", "rarity": "C", "weight": 10.0}, {"word": "ツンデレ", "rarity": "C", "weight": 10.0}, {"word": "クレアおばさんの", "rarity": "C", "weight": 10.0}, {"word": "しごでき", "rarity": "C", "weight": 10.0}, {"word": "細川たかしで", "rarity": "C", "weight": 10.0}, {"word": "花咲か", "rarity": "C", "weight": 10.0}, {"word": "花盛りの", "rarity": "C", "weight": 10.0}, {"word": "連休最後の", "rarity": "C", "weight": 10.0}, {"word": "しこたま", "rarity": "C", "weight": 10.0}, {"word": "水曜日の", "rarity": "C", "weight": 10.0}, {"word": "バキバキの", "rarity": "C", "weight": 10.0}, {"word": "さあ行きますよ", "rarity": "C", "weight": 10.0}, {"word": "シュレディンガーの", "rarity": "C", "weight": 10.0}, {"word": "モンスターカード", "rarity": "C", "weight": 10.0}, {"word": "深海の", "rarity": "C", "weight": 10.0}, {"word": "税務署の", "rarity": "C", "weight": 10.0}, {"word": "聖なる", "rarity": "C", "weight": 10.0}, {"word": "ゴールデン", "rarity": "C", "weight": 10.0}, {"word": "ごく稀に", "rarity": "C", "weight": 10.0}, {"word": "業務用", "rarity": "C", "weight": 10.0}, {"word": "大江戸", "rarity": "C", "weight": 10.0}, {"word": "月夜の", "rarity": "C", "weight": 10.0}, {"word": "テクニカル", "rarity": "C", "weight": 10.0}, {"word": "本場ナポリの", "rarity": "C", "weight": 10.0}, {"word": "新世紀", "rarity": "C", "weight": 10.0}, {"word": "毛むくじゃらの", "rarity": "C", "weight": 10.0}, {"word": "江ノ島名物", "rarity": "C", "weight": 10.0}, {"word": "ガチ恋の", "rarity": "C", "weight": 10.0}, {"word": "おはよう", "rarity": "C", "weight": 10.0}], "下の句": [{"word": "総力戦", "rarity": "C", "weight": 10.0}, {"word": "午後", "rarity": "C", "weight": 10.0}, {"word": "となりのとなり", "rarity": "C", "weight": 10.0}, {"word": "ラメーン", "rarity": "C", "weight": 10.0}, {"word": "ご馳走様", "rarity": "C", "weight": 10.0}, {"word": "ごはんわよ", "rarity": "C", "weight": 10.0}, {"word": "雑魚", "rarity": "C", "weight": 10.0}, {"word": "ジャノメミシン", "rarity": "C", "weight": 10.0}, {"word": "浅草演芸ホール", "rarity": "C", "weight": 10.0}, {"word": "マキバオー", "rarity": "C", "weight": 10.0}, {"word": "市立図書館", "rarity": "C", "weight": 10.0}, {"word": "独眼竜(ドクガンロン)", "rarity": "C", "weight": 10.0}, {"word": "ベイサイド", "rarity": "C", "weight": 10.0}, {"word": "モヒカン", "rarity": "C", "weight": 10.0}, {"word": "ママー", "rarity": "C", "weight": 10.0}, {"word": "野村萬斎", "rarity": "C", "weight": 10.0}, {"word": "天ぷら", "rarity": "C", "weight": 10.0}, {"word": "アビーロード", "rarity": "C", "weight": 10.0}, {"word": "ロックマン", "rarity": "C", "weight": 10.0}, {"word": "燃えるゴミの日", "rarity": "C", "weight": 10.0}, {"word": "明星", "rarity": "C", "weight": 10.0}, {"word": "浜千鳥", "rarity": "C", "weight": 10.0}, {"word": "げんこつ", "rarity": "C", "weight": 10.0}, {"word": "小竹向原", "rarity": "C", "weight": 10.0}, {"word": "裁判所", "rarity": "C", "weight": 10.0}, {"word": "オランジーナ再販", "rarity": "C", "weight": 10.0}, {"word": "東照宮", "rarity": "C", "weight": 10.0}, {"word": "同好会", "rarity": "C", "weight": 10.0}, {"word": "カニの仲間", "rarity": "C", "weight": 10.0}, {"word": "容疑者男性", "rarity": "C", "weight": 10.0}, {"word": "座頭市", "rarity": "C", "weight": 10.0}, {"word": "大トロ祭り", "rarity": "C", "weight": 10.0}, {"word": "男根崇拝", "rarity": "SR", "weight": 3.0}, {"word": "街", "rarity": "C", "weight": 10.0}, {"word": "メトロイド", "rarity": "C", "weight": 10.0}, {"word": "海賊船", "rarity": "C", "weight": 10.0}, {"word": "ぶちあがるフロア", "rarity": "C", "weight": 10.0}, {"word": "ブロードキャスト", "rarity": "C", "weight": 10.0}, {"word": "集金に参りました。NHKです。", "rarity": "C", "weight": 10.0}, {"word": "連絡帳レイディオ", "rarity": "C", "weight": 10.0}, {"word": "アラバスタ編", "rarity": "C", "weight": 10.0}, {"word": "レゼ編", "rarity": "C", "weight": 10.0}, {"word": "海原雄山「うんこの方が美味い」", "rarity": "SR", "weight": 3.0}, {"word": "バリアフリー", "rarity": "C", "weight": 10.0}, {"word": "3番窓口", "rarity": "C", "weight": 10.0}, {"word": "代表取締役会長", "rarity": "C", "weight": 10.0}, {"word": "半沢直樹", "rarity": "C", "weight": 10.0}, {"word": "フレンドパーク", "rarity": "C", "weight": 10.0}, {"word": "ネットミーム", "rarity": "C", "weight": 10.0}, {"word": "工藤新一", "rarity": "C", "weight": 10.0}, {"word": "愛を込めて花束を", "rarity": "C", "weight": 10.0}, {"word": "新聞", "rarity": "C", "weight": 10.0}, {"word": "爆美女", "rarity": "C", "weight": 10.0}, {"word": "担当大臣", "rarity": "C", "weight": 10.0}, {"word": "勲章", "rarity": "C", "weight": 10.0}, {"word": "宗教", "rarity": "C", "weight": 10.0}, {"word": "夢", "rarity": "C", "weight": 10.0}, {"word": "ビリバボー", "rarity": "C", "weight": 10.0}, {"word": "アンビリバボー", "rarity": "C", "weight": 10.0}, {"word": "おめえら", "rarity": "C", "weight": 10.0}, {"word": "情熱大陸", "rarity": "C", "weight": 10.0}, {"word": "ぎょうにんべんズ", "rarity": "C", "weight": 10.0}, {"word": "鐘", "rarity": "C", "weight": 10.0}, {"word": "きび団子", "rarity": "C", "weight": 10.0}, {"word": "専門家集団", "rarity": "C", "weight": 10.0}, {"word": "ケネディ", "rarity": "C", "weight": 10.0}, {"word": "肥後克弘", "rarity": "C", "weight": 10.0}, {"word": "寺門ジモン", "rarity": "C", "weight": 10.0}, {"word": "ブルーレイ", "rarity": "C", "weight": 10.0}, {"word": "レーザーディスク", "rarity": "C", "weight": 10.0}, {"word": "お茶菓子", "rarity": "C", "weight": 10.0}, {"word": "Ultra Soul(独唱)", "rarity": "R", "weight": 5.0}, {"word": "マサカリ", "rarity": "C", "weight": 10.0}, {"word": "小沢一郎", "rarity": "C", "weight": 10.0}, {"word": "大砲", "rarity": "C", "weight": 10.0}, {"word": "ふるさと", "rarity": "C", "weight": 10.0}, {"word": "友", "rarity": "C", "weight": 10.0}, {"word": "ジャパン", "rarity": "C", "weight": 10.0}, {"word": "チュパチュパ！チュッチュパチュ〜〜！！", "rarity": "C", "weight": 10.0}, {"word": "女", "rarity": "C", "weight": 10.0}, {"word": "聖地巡礼", "rarity": "C", "weight": 10.0}, {"word": "ジャワカレー", "rarity": "C", "weight": 10.0}, {"word": "ナイトプール", "rarity": "C", "weight": 10.0}, {"word": "年金暮らし", "rarity": "C", "weight": 10.0}, {"word": "楽団", "rarity": "C", "weight": 10.0}, {"word": "お金玉洗浄機", "rarity": "SR", "weight": 3.0}, {"word": "茹で汁", "rarity": "C", "weight": 10.0}, {"word": "室井慎次", "rarity": "C", "weight": 10.0}, {"word": "大百科", "rarity": "C", "weight": 10.0}, {"word": "学園", "rarity": "C", "weight": 10.0}, {"word": "2000年問題", "rarity": "C", "weight": 10.0}, {"word": "カッター", "rarity": "C", "weight": 10.0}, {"word": "最先端", "rarity": "C", "weight": 10.0}, {"word": "レボリューション", "rarity": "C", "weight": 10.0}, {"word": "オパーイ", "rarity": "R", "weight": 5.0}, {"word": "ﾁﾝﾎﾟ（ﾎﾞﾛﾝ）", "rarity": "UR", "weight": 1.0}, {"word": "栃ノ心〜Hearts of Tochigi〜", "rarity": "R", "weight": 5.0}, {"word": "黄猿", "rarity": "C", "weight": 10.0}, {"word": "ロマン", "rarity": "C", "weight": 10.0}, {"word": "ラプソディ", "rarity": "C", "weight": 10.0}, {"word": "ドン・キホーテ", "rarity": "C", "weight": 10.0}, {"word": "恋人たち", "rarity": "C", "weight": 10.0}, {"word": "金賞受賞", "rarity": "C", "weight": 10.0}, {"word": "けんた食堂「チンポを添えてみるのも手だ」", "rarity": "SR", "weight": 3.0}, {"word": "大金玉", "rarity": "R", "weight": 5.0}, {"word": "激ウマちんぽ", "rarity": "UR", "weight": 1.0}, {"word": "TOKYO 2020🏃", "rarity": "R", "weight": 5.0}, {"word": "おちんぽミルク絞り隊", "rarity": "UR", "weight": 1.0}, {"word": "シコテッシュフォールド", "rarity": "SR", "weight": 3.0}, {"word": "ドットコム", "rarity": "C", "weight": 10.0}, {"word": "ダークライ", "rarity": "C", "weight": 10.0}, {"word": "ファイナンシャルプランナー", "rarity": "C", "weight": 10.0}, {"word": "海賊王", "rarity": "C", "weight": 10.0}, {"word": "秋刀魚", "rarity": "C", "weight": 10.0}, {"word": "レボリューション", "rarity": "C", "weight": 10.0}, {"word": "あなた", "rarity": "C", "weight": 10.0}, {"word": "誰も知らない", "rarity": "C", "weight": 10.0}, {"word": "人", "rarity": "C", "weight": 10.0}, {"word": "巨大すぎるよ", "rarity": "C", "weight": 10.0}, {"word": "乳毛の森", "rarity": "R", "weight": 5.0}, {"word": "冷笑界隈", "rarity": "C", "weight": 10.0}, {"word": "熱血わいわい", "rarity": "C", "weight": 10.0}, {"word": "全員集合！", "rarity": "C", "weight": 10.0}, {"word": "ご破算", "rarity": "C", "weight": 10.0}, {"word": "アナゴさん「ふぅぐたぐーん」", "rarity": "C", "weight": 10.0}, {"word": "青酸デカカリ", "rarity": "UR", "weight": 1.0}, {"word": "お蔵入り", "rarity": "C", "weight": 10.0}, {"word": "Lovers", "rarity": "C", "weight": 10.0}, {"word": "ジョボビッチ", "rarity": "C", "weight": 10.0}, {"word": "増税メガネ", "rarity": "C", "weight": 10.0}, {"word": "共和国", "rarity": "C", "weight": 10.0}, {"word": "瀬戸内寂聴", "rarity": "C", "weight": 10.0}, {"word": "シリアルキラー", "rarity": "C", "weight": 10.0}, {"word": "川並", "rarity": "C", "weight": 10.0}, {"word": "プラネット", "rarity": "C", "weight": 10.0}, {"word": "コミュニケーション", "rarity": "C", "weight": 10.0}, {"word": "ジョコヴィッチ", "rarity": "C", "weight": 10.0}, {"word": "像", "rarity": "C", "weight": 10.0}, {"word": "投手", "rarity": "C", "weight": 10.0}, {"word": "タナカ", "rarity": "C", "weight": 10.0}, {"word": "イガワ", "rarity": "C", "weight": 10.0}, {"word": "菩薩", "rarity": "C", "weight": 10.0}, {"word": "うんち院ブリブリ居士", "rarity": "R", "weight": 5.0}, {"word": "無双竜機ボルバルザーク", "rarity": "C", "weight": 10.0}, {"word": "ドラゴンズ", "rarity": "C", "weight": 10.0}, {"word": "マキグソ山", "rarity": "R", "weight": 5.0}, {"word": "選挙管理委員", "rarity": "C", "weight": 10.0}, {"word": "サッカー", "rarity": "C", "weight": 10.0}, {"word": "ヒカキン", "rarity": "C", "weight": 10.0}, {"word": "ONICHA", "rarity": "C", "weight": 10.0}, {"word": "ケース", "rarity": "C", "weight": 10.0}, {"word": "おちんちん構想", "rarity": "UR", "weight": 1.0}, {"word": "SUSURU TV", "rarity": "C", "weight": 10.0}, {"word": "閲覧", "rarity": "C", "weight": 10.0}, {"word": "男塾", "rarity": "C", "weight": 10.0}, {"word": "エヴァンゲリオン", "rarity": "C", "weight": 10.0}, {"word": "アナル術", "rarity": "SR", "weight": 3.0}, {"word": "貴重な産卵シーン", "rarity": "C", "weight": 10.0}, {"word": "アナル長老", "rarity": "SR", "weight": 3.0}, {"word": "アナル歩兵", "rarity": "SR", "weight": 3.0}, {"word": "OCHINCHA", "rarity": "R", "weight": 5.0}, {"word": "インポスター", "rarity": "C", "weight": 10.0}, {"word": "墳墓", "rarity": "C", "weight": 10.0}, {"word": "ボーイ", "rarity": "C", "weight": 10.0}, {"word": "ガール", "rarity": "C", "weight": 10.0}, {"word": "オールナイトニッポン", "rarity": "C", "weight": 10.0}, {"word": "SHIKORU TV「シコる～～～！！！」", "rarity": "SR", "weight": 3.0}, {"word": "島", "rarity": "C", "weight": 10.0}, {"word": "大ペニス", "rarity": "UR", "weight": 1.0}, {"word": "中ペニス", "rarity": "SR", "weight": 3.0}, {"word": "小ペニス", "rarity": "R", "weight": 5.0}, {"word": "公認会計士事務所", "rarity": "C", "weight": 10.0}, {"word": "北酒場", "rarity": "C", "weight": 10.0}, {"word": "夢いっぱい", "rarity": "C", "weight": 10.0}, {"word": "細木数子", "rarity": "C", "weight": 10.0}, {"word": "IKKO", "rarity": "C", "weight": 10.0}, {"word": "阿部寛", "rarity": "C", "weight": 10.0}, {"word": "逆襲", "rarity": "C", "weight": 10.0}, {"word": "鈴木敏夫P「宮さんがね、勃起してるんだよ」", "rarity": "UR", "weight": 1.0}, {"word": "インティライミ", "rarity": "C", "weight": 10.0}, {"word": "昇龍", "rarity": "C", "weight": 10.0}, {"word": "シチューの秘密", "rarity": "C", "weight": 10.0}, {"word": "オキシコンチン", "rarity": "C", "weight": 10.0}, {"word": "水曜日の緩和ケア", "rarity": "C", "weight": 10.0}, {"word": "幼馴染", "rarity": "C", "weight": 10.0}, {"word": "ファンタジースプリングス", "rarity": "C", "weight": 10.0}, {"word": "Thinkpad日の丸弁当", "rarity": "C", "weight": 10.0}, {"word": "スラム街", "rarity": "C", "weight": 10.0}, {"word": "ラクーンシティ", "rarity": "C", "weight": 10.0}, {"word": "給湯室", "rarity": "C", "weight": 10.0}, {"word": "かぐや姫", "rarity": "C", "weight": 10.0}, {"word": "更衣室", "rarity": "C", "weight": 10.0}, {"word": "取調室", "rarity": "C", "weight": 10.0}, {"word": "裁判所", "rarity": "C", "weight": 10.0}, {"word": "火葬場", "rarity": "C", "weight": 10.0}, {"word": "墓地", "rarity": "C", "weight": 10.0}, {"word": "ゴミ集積場", "rarity": "C", "weight": 10.0}, {"word": "コインランドリー", "rarity": "C", "weight": 10.0}, {"word": "サウナ", "rarity": "C", "weight": 10.0}, {"word": "交番", "rarity": "C", "weight": 10.0}, {"word": "市役所", "rarity": "C", "weight": 10.0}, {"word": "甘エビ", "rarity": "C", "weight": 10.0}, {"word": "竜宮城", "rarity": "C", "weight": 10.0}, {"word": "極楽浄土", "rarity": "C", "weight": 10.0}, {"word": "針の山", "rarity": "C", "weight": 10.0}, {"word": "異次元", "rarity": "C", "weight": 10.0}, {"word": "四次元ポケット", "rarity": "C", "weight": 10.0}, {"word": "ブラックホール", "rarity": "C", "weight": 10.0}, {"word": "ユートピア", "rarity": "C", "weight": 10.0}, {"word": "ディストピア", "rarity": "C", "weight": 10.0}, {"word": "パノプティコン", "rarity": "C", "weight": 10.0}, {"word": "シャングリラ", "rarity": "C", "weight": 10.0}, {"word": "魔界", "rarity": "C", "weight": 10.0}, {"word": "聖域", "rarity": "C", "weight": 10.0}, {"word": "隠れ里", "rarity": "C", "weight": 10.0}, {"word": "ホワイトハウス", "rarity": "C", "weight": 10.0}, {"word": "要塞", "rarity": "C", "weight": 10.0}, {"word": "秘密基地", "rarity": "C", "weight": 10.0}, {"word": "地下シェルター", "rarity": "C", "weight": 10.0}, {"word": "最南端", "rarity": "C", "weight": 10.0}, {"word": "最前線", "rarity": "C", "weight": 10.0}, {"word": "袋小路", "rarity": "C", "weight": 10.0}, {"word": "断崖絶壁", "rarity": "C", "weight": 10.0}, {"word": "中間管理職", "rarity": "C", "weight": 10.0}, {"word": "片岡鶴太郎", "rarity": "C", "weight": 10.0}, {"word": "ビリーバンバン", "rarity": "C", "weight": 10.0}, {"word": "バリービンビン", "rarity": "R", "weight": 5.0}, {"word": "ホリエモン", "rarity": "C", "weight": 10.0}, {"word": "コーヒータイム", "rarity": "C", "weight": 10.0}, {"word": "サンバ", "rarity": "C", "weight": 10.0}, {"word": "片平", "rarity": "R", "weight": 5.0}, {"word": "川内", "rarity": "R", "weight": 5.0}, {"word": "八木山", "rarity": "R", "weight": 5.0}, {"word": "けんた食堂「しょんべんは流さないのが経済」", "rarity": "SR", "weight": 3.0}, {"word": "巨人軍", "rarity": "C", "weight": 10.0}, {"word": "親衛隊", "rarity": "C", "weight": 10.0}, {"word": "ゴエモン", "rarity": "C", "weight": 10.0}, {"word": "やまや", "rarity": "C", "weight": 10.0}, {"word": "M!LKのオタク", "rarity": "C", "weight": 10.0}, {"word": "ぼったくり漫画喫茶", "rarity": "C", "weight": 10.0}, {"word": "姫カットおじさん", "rarity": "C", "weight": 10.0}, {"word": "ガチゴラス", "rarity": "C", "weight": 10.0}, {"word": "ジャンボリミッキー", "rarity": "C", "weight": 10.0}, {"word": "たけし軍団", "rarity": "C", "weight": 10.0}, {"word": "バラムツ", "rarity": "C", "weight": 10.0}, {"word": "BIG！BIG！BIG！", "rarity": "C", "weight": 10.0}], "曜日": [{"word": "病", "rarity": "C", "weight": 10.0}, {"word": "酉", "rarity": "C", "weight": 10.0}, {"word": "殺", "rarity": "C", "weight": 10.0}, {"word": "鰯", "rarity": "C", "weight": 10.0}, {"word": "韆", "rarity": "C", "weight": 10.0}, {"word": "M", "rarity": "C", "weight": 10.0}, {"word": "ソメゴロォ！ソメゴロォ！", "rarity": "R", "weight": 5.0}, {"word": "子曰", "rarity": "C", "weight": 10.0}, {"word": "税", "rarity": "C", "weight": 10.0}, {"word": "侘", "rarity": "C", "weight": 10.0}, {"word": "冥", "rarity": "C", "weight": 10.0}, {"word": "黎", "rarity": "C", "weight": 10.0}, {"word": "寂", "rarity": "C", "weight": 10.0}, {"word": "電", "rarity": "C", "weight": 10.0}, {"word": "ちよつと待つてくださいまし、私に考えがあるわ", "rarity": "R", "weight": 5.0}, {"word": "辯", "rarity": "C", "weight": 10.0}, {"word": "PDF", "rarity": "C", "weight": 10.0}, {"word": "己", "rarity": "C", "weight": 10.0}, {"word": "是", "rarity": "C", "weight": 10.0}, {"word": "尿", "rarity": "C", "weight": 10.0}, {"word": "倍", "rarity": "C", "weight": 10.0}, {"word": "泥", "rarity": "C", "weight": 10.0}, {"word": "肘", "rarity": "C", "weight": 10.0}, {"word": "塩", "rarity": "C", "weight": 10.0}, {"word": "韮", "rarity": "C", "weight": 10.0}, {"word": "味", "rarity": "C", "weight": 10.0}, {"word": "爆", "rarity": "C", "weight": 10.0}, {"word": "濁", "rarity": "C", "weight": 10.0}, {"word": "トリコさんこれを見てください", "rarity": "R", "weight": 5.0}, {"word": "凸", "rarity": "C", "weight": 10.0}, {"word": "顎", "rarity": "C", "weight": 10.0}, {"word": "祝日及び土日", "rarity": "C", "weight": 10.0}, {"word": "減", "rarity": "C", "weight": 10.0}, {"word": "逆", "rarity": "C", "weight": 10.0}, {"word": "将を射んと欲すれば松本伊", "rarity": "R", "weight": 5.0}, {"word": "急いては事を志尊淳", "rarity": "R", "weight": 5.0}, {"word": "脳", "rarity": "C", "weight": 10.0}, {"word": "月", "rarity": "UR", "weight": 1.0}, {"word": "火", "rarity": "UR", "weight": 1.0}, {"word": "水", "rarity": "UR", "weight": 1.0}, {"word": "木", "rarity": "UR", "weight": 1.0}, {"word": "金", "rarity": "UR", "weight": 1.0}, {"word": "ﾈﾙﾇﾝｲﾛｯｹﾎﾟﾝﾆｮｸﾁｮｷﾞﾖｶﾘｱﾆﾗﾝﾏﾘｴ", "rarity": "R", "weight": 5.0}, {"word": "ｽﾋﾟｷﾓﾘｼﾞｬﾊﾞﾀﾞﾝｷﾞｼﾞﾏｾ", "rarity": "R", "weight": 5.0}, {"word": "ﾁｮｱ", "rarity": "C", "weight": 10.0}, {"word": "死ぬわ", "rarity": "C", "weight": 10.0}, {"word": "乳", "rarity": "C", "weight": 10.0}, {"word": "太平", "rarity": "C", "weight": 10.0}, {"word": "罪", "rarity": "C", "weight": 10.0}, {"word": "繧", "rarity": "C", "weight": 10.0}, {"word": "百", "rarity": "C", "weight": 10.0}, {"word": "㌐", "rarity": "C", "weight": 10.0}, {"word": "瞞", "rarity": "C", "weight": 10.0}, {"word": "蟠", "rarity": "C", "weight": 10.0}, {"word": "楽", "rarity": "C", "weight": 10.0}, {"word": "奇", "rarity": "C", "weight": 10.0}, {"word": "廻", "rarity": "C", "weight": 10.0}, {"word": "戒", "rarity": "C", "weight": 10.0}, {"word": "壇蜜", "rarity": "R", "weight": 5.0}, {"word": "Ⅵ", "rarity": "C", "weight": 10.0}, {"word": "巨", "rarity": "C", "weight": 10.0}, {"word": "根", "rarity": "C", "weight": 10.0}, {"word": "男", "rarity": "C", "weight": 10.0}], "EX": [{"word": "{F1}", "rarity": "C", "weight": 100.0}, {"word": "突撃！{F1}", "rarity": "R", "weight": 10.0}, {"word": "まいどぉ！{F1}", "rarity": "R", "weight": 10.0}, {"word": "効いたよね。{F1}", "rarity": "R", "weight": 10.0}, {"word": "ポケットモンスター 「{F1}」 「{F2}」", "rarity": "SR", "weight": 5.0}, {"word": "{L2}、それは{F1}", "rarity": "R", "weight": 10.0}, {"word": "{L1}とでも思ったか{L2}！", "rarity": "R", "weight": 10.0}, {"word": "奇跡体験！{F1}", "rarity": "R", "weight": 10.0}, {"word": "連続テレビ小説 「{F1}」", "rarity": "R", "weight": 10.0}, {"word": "森田一義アワー　{F1}", "rarity": "R", "weight": 10.0}, {"word": "Nissan Presents　{F1}", "rarity": "R", "weight": 10.0}, {"word": "舞い上がれ！{F1}", "rarity": "R", "weight": 10.0}, {"word": "こ、こんなのほとんど{F1}じゃない！", "rarity": "UR", "weight": 1.0}, {"word": "{U1}空、それはまるで{L1}のようだった", "rarity": "R", "weight": 10.0}, {"word": "{F1}と来たもんだTV", "rarity": "R", "weight": 10.0}, {"word": "{F1}なんだよなあ　みつを", "rarity": "UR", "weight": 1.0}, {"word": "新春！{F1}", "rarity": "R", "weight": 10.0}, {"word": "{L2}は、{F1}に過ぎない。", "rarity": "R", "weight": 10.0}, {"word": "帰ってきた{F1} ", "rarity": "R", "weight": 10.0}, {"word": "ハリーポッターと{L1}の騎士団", "rarity": "SR", "weight": 5.0}, {"word": "{U1} 俺が転生したら{F2}だった件", "rarity": "UR", "weight": 1.0}, {"word": "輝け！日本{F1}大賞", "rarity": "SR", "weight": 5.0}, {"word": "{L1}ニモマケズ{L2}ニモマケズ", "rarity": "R", "weight": 10.0}, {"word": "{W1}曜は{L1}と一緒にデートしちゃお？", "rarity": "R", "weight": 10.0}, {"word": "{W2}{W3}{W2}{W3}", "rarity": "R", "weight": 10.0}, {"word": "ドナルド・トランプ「{F1}」", "rarity": "SR", "weight": 5.0}, {"word": "卍解「{L1}」...！", "rarity": "R", "weight": 10.0}, {"word": "(株){F1}(株)", "rarity": "R", "weight": 10.0}, {"word": "センター・オブ・ジ・{F1}", "rarity": "R", "weight": 10.0}, {"word": "失礼しました、{L1}と出てしまいました", "rarity": "R", "weight": 10.0}, {"word": "シン{L1}", "rarity": "R", "weight": 10.0}, {"word": "{F1}（命令形、２人称単数）", "rarity": "R", "weight": 10.0}, {"word": "電車で{L1}しないで下さい、必ず{L2}してしまいます", "rarity": "SR", "weight": 5.0}, {"word": "{L1}たちのララバイ", "rarity": "R", "weight": 10.0}, {"word": "{L1}{U1}", "rarity": "R", "weight": 10.0}, {"word": "{U1}{U2}{L1}{L2}", "rarity": "R", "weight": 10.0}, {"word": "{L1}{L2}", "rarity": "R", "weight": 10.0}, {"word": "18代目市川{L1}", "rarity": "R", "weight": 10.0}, {"word": "劇場版 鬼滅の刃 無限{L1}篇", "rarity": "R", "weight": 10.0}, {"word": "{F1}の垢を煎じて飲め！", "rarity": "R", "weight": 10.0}, {"word": "ハルヒ「キョン！{F1}するわよ！」", "rarity": "R", "weight": 10.0}, {"word": "なんでもないようなことが{L1}だったと思う", "rarity": "R", "weight": 10.0}, {"word": "{F1}のことなら{L2}工務店にお任せください", "rarity": "R", "weight": 10.0}, {"word": "{U2}{F1}", "rarity": "C", "weight": 100.0}, {"word": "{W1}曜日のカンパネラfeaturing{L1}", "rarity": "R", "weight": 10.0}, {"word": "{L1}。またの名を{F2}", "rarity": "R", "weight": 10.0}, {"word": "「{U1}{F2}」CV.大塚芳忠", "rarity": "R", "weight": 10.0}, {"word": "古池や　{U1}　{L1}", "rarity": "R", "weight": 10.0}, {"word": "それではお聞きください。キリンジで「{F1}」", "rarity": "R", "weight": 10.0}]};
+const RARITIES = ["C", "R", "SR", "UR"];
+const SHOW_RATE_POOLS = ["上の句", "下の句", "EX"];
 
-const STORAGE_KEY = "pocket-title-gacha-pools-v1";
+/* レア度から重み（出現しやすさ）を自動決定するための対応表。
+   EXタブだけ他のタブと基準が異なる。 */
+const RARITY_WEIGHTS = {
+  default: { C: 10, R: 5, SR: 3, UR: 1 },
+  EX: { C: 100, R: 10, SR: 5, UR: 1 }
+};
+function weightForRarity(poolName, rarity) {
+  const table = (poolName === "EX") ? RARITY_WEIGHTS.EX : RARITY_WEIGHTS.default;
+  return table[rarity] || 1;
+}
 
-function loadPools() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return structuredClone(DEFAULT_POOLS);
-    const parsed = JSON.parse(raw);
-    for (const name of POOL_NAMES) {
-      if (!Array.isArray(parsed[name])) parsed[name] = structuredClone(DEFAULT_POOLS[name]);
-    }
-    return parsed;
-  } catch (e) {
-    return structuredClone(DEFAULT_POOLS);
+const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+let pools = { "上の句": [], "下の句": [], "曜日": [], "EX": [] };
+let poolKeys = { "上の句": [], "下の句": [], "曜日": [], "EX": [] };
+let db = null;
+
+const configWarning = document.getElementById("configWarning");
+const syncStatus = document.getElementById("syncStatus");
+const drawBtn = document.getElementById("drawBtn");
+const speakBtn = document.getElementById("speakBtn");
+const copyBtn = document.getElementById("copyBtn");
+const addRowBtn = document.getElementById("addRowBtn");
+
+if (!isConfigured) {
+  configWarning.style.display = "block";
+  syncStatus.textContent = "未接続（firebaseConfig未設定）";
+} else {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+
+  db.ref(".info/connected").on("value", (snap) => {
+    const connected = snap.val() === true;
+    syncStatus.textContent = connected ? "みんなと共有中" : "接続中…";
+    syncStatus.classList.toggle("connected", connected);
+    drawBtn.disabled = !connected;
+    addRowBtn.disabled = !connected;
+  });
+
+  POOL_NAMES.forEach((name) => {
+    db.ref("pools/" + name).on("value", (snapshot) => {
+      const val = snapshot.val() || {};
+      const entries = Object.entries(val);
+      pools[name] = entries.map(([, v]) => ({
+        word: v && v.word ? v.word : "",
+        rarity: v && v.rarity ? v.rarity : "C",
+        weight: (v && typeof v.weight === "number" && v.weight > 0) ? v.weight : 1
+      }));
+      poolKeys[name] = entries.map(([k]) => k);
+      refreshTabCounts();
+      if (poolContainers[name]) renderPoolRows(name);
+      if (SHOW_RATE_POOLS.includes(name)) renderRateSummary(name);
+    });
+  });
+}
+
+/* --- undo / redo（自分がこの端末で行った操作だけを対象） ---
+   1操作あたりのデータはごく小さい（パスと変更前後の値のみ）ため、
+   200件保持してもメモリへの影響はほぼ無視できます。 */
+let undoStack = [];
+let redoStack = [];
+const MAX_HISTORY = 200;
+
+function pushHistory(entry) {
+  undoStack.push(entry);
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack = []; // 新しい操作をしたら、やり直し履歴は破棄する
+  updateUndoRedoButtons();
+}
+
+function applyEntry(entry, direction) {
+  if (!db) return;
+  const useValue = (direction === "undo") ? entry.prevValue : entry.newValue;
+  if (entry.type === "field") {
+    db.ref(entry.path).set(useValue);
+  } else if (entry.type === "fields") {
+    db.ref(entry.path).update(useValue);
+  } else if (entry.type === "add") {
+    if (direction === "undo") db.ref(entry.path).remove();
+    else db.ref(entry.path).set(entry.newValue);
+  } else if (entry.type === "delete") {
+    if (direction === "undo") db.ref(entry.path).set(entry.prevValue);
+    else db.ref(entry.path).remove();
   }
 }
 
-let pools = loadPools();
-
-function poolToText(pool) {
-  return pool.map(item => [item.word, item.rarity, item.weight].join("\t")).join("\n");
+function undo() {
+  const entry = undoStack.pop();
+  if (!entry || !db) return;
+  applyEntry(entry, "undo");
+  redoStack.push(entry);
+  if (redoStack.length > MAX_HISTORY) redoStack.shift();
+  updateUndoRedoButtons();
 }
 
-function textToPool(text) {
-  return text.split("\n")
-    .map(line => line.replace(/\r$/, ""))
-    .filter(line => line.trim().length > 0)
-    .map(line => {
-      const parts = line.split("\t");
-      const word = (parts[0] || "").trim();
-      const rarity = (parts[1] || "C").trim() || "C";
-      const weight = parseFloat(parts[2]);
-      return { word, rarity, weight: (isFinite(weight) && weight > 0) ? weight : 1 };
-    })
-    .filter(item => item.word.length > 0);
+function redo() {
+  const entry = redoStack.pop();
+  if (!entry || !db) return;
+  applyEntry(entry, "redo");
+  undoStack.push(entry);
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  updateUndoRedoButtons();
 }
+
+const undoBtn = document.getElementById("undoBtn");
+const redoBtn = document.getElementById("redoBtn");
+
+function updateUndoRedoButtons() {
+  undoBtn.disabled = undoStack.length === 0;
+  redoBtn.disabled = redoStack.length === 0;
+}
+updateUndoRedoButtons();
+
+undoBtn.addEventListener("click", undo);
+redoBtn.addEventListener("click", redo);
+
+window.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && key === "z" && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+  } else if ((e.ctrlKey || e.metaKey) && (key === "y" || (key === "z" && e.shiftKey))) {
+    e.preventDefault();
+    redo();
+  }
+});
+
+/* --- gacha logic --- */
 
 function weightedPick(pool) {
-  const valid = pool.filter(i => i.weight > 0);
+  const valid = pool.filter(i => i.weight > 0 && i.word);
   const total = valid.reduce((sum, i) => sum + i.weight, 0);
   if (total <= 0 || valid.length === 0) return { word: "", rarity: "C", weight: 1 };
   let r = Math.random() * total;
@@ -479,9 +703,6 @@ function buildResult() {
   return { dayLine, title, rarity: ex.rarity || "C" };
 }
 
-const drawBtn = document.getElementById("drawBtn");
-const speakBtn = document.getElementById("speakBtn");
-const copyBtn = document.getElementById("copyBtn");
 const resultBox = document.getElementById("resultBox");
 const placeholderText = document.getElementById("placeholderText");
 const resultContent = document.getElementById("resultContent");
@@ -498,10 +719,12 @@ function randomFlickerWord() {
   const names = ["上の句", "下の句", "EX"];
   const pool = pools[names[Math.floor(Math.random() * names.length)]];
   if (!pool || pool.length === 0) return "・・・";
-  return pool[Math.floor(Math.random() * pool.length)].word;
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  return item.word || "・・・";
 }
 
 function drawGacha() {
+  if (!db) return;
   drawBtn.disabled = true;
   speakBtn.disabled = true;
   copyBtn.disabled = true;
@@ -555,39 +778,13 @@ copyBtn.addEventListener("click", async () => {
   setTimeout(() => { copyFlash.textContent = ""; }, 2000);
 });
 
-/* --- editor --- */
+/* --- editor (row-based, synced with Firebase) --- */
 
 const tabRow = document.getElementById("tabRow");
-const textareaRow = document.getElementById("textareaRow");
-const saveBtn = document.getElementById("saveBtn");
-const resetBtn = document.getElementById("resetBtn");
-const saveFlash = document.getElementById("saveFlash");
+const poolTables = document.getElementById("poolTables");
 
 let activeTab = POOL_NAMES[0];
-const textareas = {};
-
-POOL_NAMES.forEach(name => {
-  const tabBtn = document.createElement("button");
-  tabBtn.type = "button";
-  tabBtn.className = "tab-btn" + (name === activeTab ? " active" : "");
-  tabBtn.textContent = name + "（" + pools[name].length + "）";
-  tabBtn.dataset.name = name;
-  tabBtn.addEventListener("click", () => switchTab(name));
-  tabRow.appendChild(tabBtn);
-
-  const ta = document.createElement("textarea");
-  ta.className = "pool-edit" + (name === activeTab ? " active" : "");
-  ta.value = poolToText(pools[name]);
-  ta.dataset.name = name;
-  textareaRow.appendChild(ta);
-  textareas[name] = ta;
-});
-
-function switchTab(name) {
-  activeTab = name;
-  [...tabRow.children].forEach(btn => btn.classList.toggle("active", btn.dataset.name === name));
-  Object.values(textareas).forEach(ta => ta.classList.toggle("active", ta.dataset.name === name));
-}
+const poolContainers = {};
 
 function refreshTabCounts() {
   [...tabRow.children].forEach(btn => {
@@ -596,24 +793,158 @@ function refreshTabCounts() {
   });
 }
 
-saveBtn.addEventListener("click", () => {
-  POOL_NAMES.forEach(name => {
-    pools[name] = textToPool(textareas[name].value);
-  });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pools));
-  refreshTabCounts();
-  saveFlash.textContent = "保存しました。次のガチャから反映されます。";
-  setTimeout(() => { saveFlash.textContent = ""; }, 2500);
-});
+function switchTab(name) {
+  activeTab = name;
+  [...tabRow.children].forEach(btn => btn.classList.toggle("active", btn.dataset.name === name));
+  POOL_NAMES.forEach(n => poolContainers[n].classList.toggle("active", n === name));
+  SHOW_RATE_POOLS.forEach(n => rateContainers[n].classList.toggle("active", n === name));
+}
 
-resetBtn.addEventListener("click", () => {
-  if (!confirm("編集内容を破棄して初期状態に戻します。よろしいですか？")) return;
-  pools = structuredClone(DEFAULT_POOLS);
-  localStorage.removeItem(STORAGE_KEY);
-  POOL_NAMES.forEach(name => { textareas[name].value = poolToText(pools[name]); });
+function buildRow(name, idx) {
+  const item = pools[name][idx];
+  const key = poolKeys[name][idx];
+  const basePath = "pools/" + name + "/" + key;
+  const row = document.createElement("div");
+  row.className = "pool-row";
+
+  const wordInput = document.createElement("input");
+  wordInput.type = "text";
+  wordInput.value = item.word;
+  wordInput.placeholder = "単語を入力";
+  wordInput.addEventListener("change", () => {
+    if (!db) return;
+    pushHistory({ type: "field", path: basePath + "/word", prevValue: item.word, newValue: wordInput.value });
+    db.ref(basePath + "/word").set(wordInput.value);
+  });
+
+  const raritySelect = document.createElement("select");
+  RARITIES.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = r;
+    if (r === item.rarity) opt.selected = true;
+    raritySelect.appendChild(opt);
+  });
+  raritySelect.title = "レア度（出現しやすさはレア度から自動設定されます）";
+  raritySelect.addEventListener("change", () => {
+    if (!db) return;
+    const newRarity = raritySelect.value;
+    const newWeight = weightForRarity(name, newRarity);
+    pushHistory({
+      type: "fields",
+      path: basePath,
+      prevValue: { rarity: item.rarity, weight: item.weight },
+      newValue: { rarity: newRarity, weight: newWeight }
+    });
+    db.ref(basePath).update({ rarity: newRarity, weight: newWeight });
+  });
+
+  const delBtn = document.createElement("button");
+  delBtn.type = "button";
+  delBtn.className = "row-del";
+  delBtn.textContent = "\u00d7";
+  delBtn.title = "この単語を削除";
+  delBtn.addEventListener("click", () => {
+    if (!db) return;
+    pushHistory({
+      type: "delete",
+      path: basePath,
+      prevValue: { word: item.word, rarity: item.rarity, weight: item.weight }
+    });
+    db.ref(basePath).remove();
+  });
+
+  row.appendChild(wordInput);
+  row.appendChild(raritySelect);
+  row.appendChild(delBtn);
+  return row;
+}
+
+function renderPoolRows(name) {
+  const container = poolContainers[name];
+  const focused = document.activeElement;
+  const focusedIsInside = container.contains(focused);
+  const focusedIndex = focusedIsInside ? [...container.children].indexOf(focused.closest(".pool-row")) : -1;
+
+  container.innerHTML = "";
+  pools[name].forEach((item, idx) => {
+    container.appendChild(buildRow(name, idx));
+  });
+
+  if (focusedIndex >= 0 && container.children[focusedIndex]) {
+    const input = container.children[focusedIndex].querySelector("input[type='text']");
+    if (input) input.focus();
+  }
+}
+
+const rateSummaryRow = document.getElementById("rateSummaryRow");
+const rateContainers = {};
+
+function renderRateSummary(name) {
+  const container = rateContainers[name];
+  if (!container) return;
+  const pool = pools[name] || [];
+  const totals = {};
+  let total = 0;
+  pool.forEach(item => {
+    if (!item.word || !(item.weight > 0)) return;
+    totals[item.rarity] = (totals[item.rarity] || 0) + item.weight;
+    total += item.weight;
+  });
+
+  container.innerHTML = "";
+  if (total <= 0) {
+    const empty = document.createElement("span");
+    empty.className = "rate-empty";
+    empty.textContent = "単語がありません";
+    container.appendChild(empty);
+    return;
+  }
+  RARITIES.forEach(r => {
+    if (!totals[r]) return;
+    const pct = (totals[r] / total * 100);
+    const pill = document.createElement("span");
+    pill.className = "rate-pill rate-" + r;
+    pill.textContent = r + " " + pct.toFixed(1) + "%";
+    container.appendChild(pill);
+  });
+}
+
+function buildPoolTables() {
+  POOL_NAMES.forEach(name => {
+    const tabBtn = document.createElement("button");
+    tabBtn.type = "button";
+    tabBtn.className = "tab-btn" + (name === activeTab ? " active" : "");
+    tabBtn.dataset.name = name;
+    tabBtn.addEventListener("click", () => switchTab(name));
+    tabRow.appendChild(tabBtn);
+
+    const container = document.createElement("div");
+    container.className = "pool-rows" + (name === activeTab ? " active" : "");
+    container.dataset.name = name;
+    poolTables.appendChild(container);
+    poolContainers[name] = container;
+
+    if (SHOW_RATE_POOLS.includes(name)) {
+      const rateDiv = document.createElement("div");
+      rateDiv.className = "rate-summary" + (name === activeTab ? " active" : "");
+      rateDiv.dataset.name = name;
+      rateSummaryRow.appendChild(rateDiv);
+      rateContainers[name] = rateDiv;
+    }
+  });
   refreshTabCounts();
-  saveFlash.textContent = "初期状態に戻しました。";
-  setTimeout(() => { saveFlash.textContent = ""; }, 2500);
+}
+
+buildPoolTables();
+
+addRowBtn.addEventListener("click", () => {
+  if (!db) return;
+  const newRef = db.ref("pools/" + activeTab).push();
+  const path = "pools/" + activeTab + "/" + newRef.key;
+  const newValue = { word: "", rarity: "C", weight: weightForRarity(activeTab, "C") };
+  pushHistory({ type: "add", path, newValue });
+  newRef.set(newValue);
 });
 </script>
 </body>
