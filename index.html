@@ -11,20 +11,22 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   :root {
-    --bg: #15100b;
-    --bg-2: #1f1811;
-    --panel: #241b13;
-    --panel-line: #3a2c1c;
-    --screen: #0d0906;
-    --text: #f3e8d6;
-    --text-dim: #a9967d;
-    --accent: #d9a441;
-    --accent-2: #c96a2e;
-    --c-c: #8f857a;
-    --c-r: #5fa3d0;
-    --c-sr: #b478e0;
-    --c-ur: #f2b705;
-    --warn: #d9776a;
+    --bg: #faf1de;
+    --bg-2: #f2e3c4;
+    --panel: #fffdf7;
+    --panel-line: #e6d5ae;
+    --screen: #fefaf6;
+    --text: #211910;
+    --text-dim: #100a02;
+    --screen-text: #110a01;
+    --screen-text-dim: #a8967c;
+    --accent: #d98a1f;
+    --accent-2: #e06b38;
+    --c-c: #716a5c;
+    --c-r: #2f8fd0;
+    --c-sr: #a855d9;
+    --c-ur: #d99a00;
+    --warn: #cf5b3f;
     --radius: 14px;
   }
 
@@ -34,7 +36,7 @@
     margin: 0;
     min-height: 100vh;
     background:
-      radial-gradient(1200px 700px at 50% -10%, #2a1f14 0%, var(--bg) 55%),
+      radial-gradient(1200px 700px at 50% -10%, #fffaf0 0%, var(--bg) 55%),
       var(--bg);
     color: var(--text);
     font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
@@ -53,7 +55,7 @@
 
   header.page-head {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
   }
 
   header.page-head h1 {
@@ -68,14 +70,15 @@
   header.page-head p {
     margin: 0;
     color: var(--text-dim);
-    font-size: 13.5px;
+    font-size: 13px;
+    word-break: break-all;
   }
 
   .config-warning {
     display: none;
-    background: rgba(217,119,106,0.12);
-    border: 1px solid rgba(217,119,106,0.5);
-    color: #f0c9c3;
+    background: rgba(207,91,63,0.10);
+    border: 1px solid rgba(207,91,63,0.45);
+    color: #8a3320;
     border-radius: 12px;
     padding: 14px 16px;
     font-size: 12.5px;
@@ -83,7 +86,7 @@
     margin-bottom: 18px;
   }
   .config-warning code {
-    background: rgba(255,255,255,0.08);
+    background: rgba(43,33,22,0.07);
     padding: 1px 5px;
     border-radius: 4px;
   }
@@ -101,16 +104,16 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #6fbf73;
+    background: #3fa758;
     margin-right: 6px;
   }
 
   .set {
-    background: linear-gradient(180deg, var(--panel), #1c1610);
+    background: linear-gradient(180deg, var(--panel), var(--bg-2));
     border: 1px solid var(--panel-line);
     border-radius: 20px;
     padding: 22px;
-    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow: 0 16px 40px -20px rgba(60,42,14,0.22), inset 0 1px 0 rgba(255,255,255,0.6);
   }
 
   .dial-row {
@@ -131,7 +134,7 @@
     position: relative;
     background: var(--screen);
     border-radius: var(--radius);
-    border: 1px solid #000;
+    border: 1px solid #dad5c1;
     padding: 30px 20px;
     min-height: 168px;
     display: flex;
@@ -140,32 +143,32 @@
     justify-content: center;
     text-align: center;
     overflow: hidden;
-    box-shadow: inset 0 2px 18px rgba(0,0,0,0.8);
+    box-shadow: inset 0 1px 5px rgba(80,60,40,0.15);
   }
-
+/*
   .screen::before {
     content: "";
     position: absolute;
     inset: 0;
     background: repeating-linear-gradient(
       0deg,
-      rgba(255,255,255,0.025) 0px,
-      rgba(255,255,255,0.025) 1px,
+      rgba(255,255,255,0.03) 0px,
+      rgba(255,255,255,0.03) 1px,
       transparent 1px,
       transparent 3px
     );
     pointer-events: none;
   }
-
+*/
   .placeholder-text {
-    color: var(--text-dim);
+    color: var(--screen-text-dim);
     font-size: 14px;
     letter-spacing: 0.05em;
   }
 
   .day-line {
-    font-size: 13px;
-    color: var(--text-dim);
+    font-size: 17px;
+    color: var(--screen-text-dim);
     letter-spacing: 0.08em;
     margin-bottom: 8px;
   }
@@ -176,6 +179,7 @@
     font-size: clamp(19px, 5.4vw, 25px);
     line-height: 1.5;
     word-break: break-word;
+    color: var(--screen-text);
   }
 
   .rarity-badge {
@@ -189,19 +193,19 @@
   }
 
   .rarity-C .rarity-badge, .rarity-C .title-line { color: var(--c-c); }
-  .rarity-C .rarity-badge { background: rgba(143,133,122,0.16); border: 1px solid rgba(143,133,122,0.4); }
+  .rarity-C .rarity-badge { background: rgba(143,133,115,0.16); border: 1px solid rgba(143,133,115,0.4); }
 
   .rarity-R .rarity-badge, .rarity-R .title-line { color: var(--c-r); }
-  .rarity-R .rarity-badge { background: rgba(95,163,208,0.16); border: 1px solid rgba(95,163,208,0.45); }
+  .rarity-R .rarity-badge { background: rgba(47,143,208,0.16); border: 1px solid rgba(47,143,208,0.45); }
 
   .rarity-SR .rarity-badge, .rarity-SR .title-line { color: var(--c-sr); }
-  .rarity-SR .rarity-badge { background: rgba(180,120,224,0.18); border: 1px solid rgba(180,120,224,0.5); }
-  .rarity-SR .screen { box-shadow: inset 0 2px 18px rgba(0,0,0,0.8), 0 0 24px -4px rgba(180,120,224,0.35); }
+  .rarity-SR .rarity-badge { background: rgba(168,85,217,0.16); border: 1px solid rgba(168,85,217,0.5); }
+  .rarity-SR .screen { box-shadow: inset 0 2px 18px rgba(0,0,0,0.7), 0 0 24px -4px rgba(168,85,217,0.4); }
 
   .rarity-UR .rarity-badge, .rarity-UR .title-line { color: var(--c-ur); }
-  .rarity-UR .rarity-badge { background: rgba(242,183,5,0.18); border: 1px solid rgba(242,183,5,0.55); }
-  .rarity-UR .screen { box-shadow: inset 0 2px 18px rgba(0,0,0,0.8), 0 0 34px -2px rgba(242,183,5,0.45); }
-  .rarity-UR .title-line { text-shadow: 0 0 16px rgba(242,183,5,0.5); }
+  .rarity-UR .rarity-badge { background: rgba(217,154,0,0.18); border: 1px solid rgba(217,154,0,0.5); }
+  .rarity-UR .screen { box-shadow: inset 0 2px 18px rgba(0,0,0,0.7), 0 0 34px -2px rgba(217,154,0,0.45); }
+  .rarity-UR .title-line { text-shadow: 0 0 16px rgba(217,154,0,0.5); }
 
   @keyframes reveal-in {
     0% { opacity: 0; transform: translateY(6px) scale(0.98); }
@@ -213,7 +217,7 @@
     0%, 100% { opacity: 0.55; }
     50% { opacity: 1; }
   }
-  .spinning .title-line { animation: spin-flicker 0.12s linear infinite; color: var(--text-dim); }
+  .spinning .title-line { animation: spin-flicker 0.12s linear infinite; color: var(--screen-text-dim); }
 
   .controls {
     display: flex;
@@ -235,8 +239,8 @@
     letter-spacing: 0.08em;
     border-radius: 999px;
     background: linear-gradient(180deg, var(--accent), var(--accent-2));
-    color: #1b1208;
-    box-shadow: 0 10px 22px -8px rgba(217,164,65,0.55);
+    color: #fffaf0;
+    box-shadow: 0 10px 22px -10px rgba(217,138,31,0.55);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
   .draw-btn:active { transform: translateY(1px) scale(0.99); }
@@ -317,7 +321,7 @@
     margin: 0 0 14px;
   }
   .editor-note code {
-    background: rgba(255,255,255,0.07);
+    background: rgba(43,33,22,0.07);
     padding: 1px 5px;
     border-radius: 4px;
     font-size: 12px;
@@ -340,10 +344,31 @@
     font-weight: 500;
   }
   .tab-btn.active {
-    background: rgba(217,164,65,0.16);
+    background: rgba(217,138,31,0.16);
     border-color: var(--accent);
     color: var(--accent);
   }
+
+  .rate-summary {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .rate-summary.active { display: flex; }
+
+  .rate-pill {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+  .rate-pill.rate-C { color: var(--c-c); background: rgba(143,133,115,0.16); border: 1px solid rgba(143,133,115,0.4); }
+  .rate-pill.rate-R { color: var(--c-r); background: rgba(47,143,208,0.16); border: 1px solid rgba(47,143,208,0.45); }
+  .rate-pill.rate-SR { color: var(--c-sr); background: rgba(168,85,217,0.16); border: 1px solid rgba(168,85,217,0.5); }
+  .rate-pill.rate-UR { color: var(--c-ur); background: rgba(217,154,0,0.18); border: 1px solid rgba(217,154,0,0.5); }
+  .rate-empty { font-size: 11.5px; color: var(--text-dim); }
 
   .pool-rows {
     display: none;
@@ -365,7 +390,7 @@
     flex: 1;
     min-width: 0;
     background: var(--screen);
-    color: var(--text);
+    color: var(--screen-text);
     border: 1px solid var(--panel-line);
     border-radius: 8px;
     padding: 8px 10px;
@@ -376,7 +401,7 @@
 
   .pool-row select {
     background: var(--screen);
-    color: var(--text);
+    color: var(--screen-text);
     border: 1px solid var(--panel-line);
     border-radius: 8px;
     padding: 8px 4px;
@@ -385,27 +410,6 @@
     width: 66px;
     flex-shrink: 0;
   }
-
-  .rate-summary {
-    display: none;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .rate-summary.active { display: flex; }
-
-  .rate-pill {
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 999px;
-    letter-spacing: 0.04em;
-  }
-  .rate-pill.rate-C { color: var(--c-c); background: rgba(143,133,122,0.16); border: 1px solid rgba(143,133,122,0.4); }
-  .rate-pill.rate-R { color: var(--c-r); background: rgba(95,163,208,0.16); border: 1px solid rgba(95,163,208,0.45); }
-  .rate-pill.rate-SR { color: var(--c-sr); background: rgba(180,120,224,0.18); border: 1px solid rgba(180,120,224,0.5); }
-  .rate-pill.rate-UR { color: var(--c-ur); background: rgba(242,183,5,0.18); border: 1px solid rgba(242,183,5,0.55); }
-  .rate-empty { font-size: 11.5px; color: var(--text-dim); }
 
   .row-del {
     width: 32px;
@@ -460,10 +464,7 @@
   <p class="sync-status" id="syncStatus">接続中…</p>
 
   <section class="set" id="gachaSet">
-    <div class="dial-row">
-      <span class="dial-dot"></span><span class="dial-dot"></span><span class="dial-dot"></span>
-      <span class="dial-dot"></span><span class="dial-dot"></span>
-    </div>
+
 
     <div id="resultBox" class="rarity-C">
       <div class="screen" id="screen">
@@ -535,7 +536,7 @@ const firebaseConfig = {
 
 const POOL_NAMES = ["上の句", "下の句", "曜日", "EX"];
 const RARITIES = ["C", "R", "SR", "UR"];
-const SHOW_RATE_POOLS = ["上の句", "下の句", "EX"];
+const SHOW_RATE_POOLS = ["上の句", "下の句","曜日", "EX"];
 
 /* レア度から重み（出現しやすさ）を自動決定するための対応表。
    EXタブだけ他のタブと基準が異なる。 */
