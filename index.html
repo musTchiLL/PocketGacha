@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ランダムポケットタイトルガチャ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --bg: #15100b;
+    --bg-2: #1f1811;
+    --panel: #241b13;
+    --panel-line: #3a2c1c;
+    --screen: #0d0906;
+    --text: #f3e8d6;
+    --text-dim: #a9967d;
+    --accent: #d9a441;
+    --accent-2: #c96a2e;
+    --c-c: #8f857a;
+    --c-r: #5fa3d0;
+    --c-sr: #b478e0;
+    --c-ur: #f2b705;
+    --warn: #d9776a;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #2a1f14 0%, var(--bg) 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px 80px;
+  }
+
+  main {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  header.page-head {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  header.page-head h1 {
+    font-family: "Zen Maru Gothic", "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+    font-size: clamp(24px, 6vw, 32px);
+    letter-spacing: 0.04em;
+    margin: 0 0 6px;
+    color: var(--text);
+  }
+
+  header.page-head p {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 13.5px;
+  }
+
+  .config-warning {
+    display: none;
+    background: rgba(217,119,106,0.12);
+    border: 1px solid rgba(217,119,106,0.5);
+    color: #f0c9c3;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+  .config-warning code {
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  .sync-status {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    letter-spacing: 0.04em;
+  }
+  .sync-status.connected::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6fbf73;
+    margin-right: 6px;
+  }
+
+  .set {
+    background: linear-gradient(180deg, var(--panel), #1c1610);
+    border: 1px solid var(--panel-line);
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .dial-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .dial-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--panel-line);
+  }
+
+  .screen {
+    position: relative;
+    background: var(--screen);
+    border-radius: var(--radius);
+    border: 1px solid #000;
+    padding: 30px 20px;
+    min-height: 168px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    box-shadow: inset 0 2px 18px rgba(0,0,0,0.8);
+  }
+
+  .screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.025) 0px,
+      rgba(255,255,255,0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+  }
+
+  .placeholder-text {
+    color: var(--text-dim);
+    font-size: 14px;
+    letter-spacing: 0.05em;
+  }
+
+  .day-line {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .title-line {
+    font-family: "Zen Maru Gothic", sans-serif;
+    font-weight: 700;
+    font-size: clamp(19px, 5.4vw, 25px);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .rarity-badge {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 3px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+
+  .rarity-C .rarity-badge, .rarity-C .title-line { color: var(--c-c); }
+  .rarity-C .rarity-badge { background: rgba(143,133,122,0.16); border: 1px solid rgba(143,133,122,0.4); }
+
+  .rarity-R .rarity-badge, .rarity-R .title-line { color: var(--c-r); }
+  .rarity-R .rarity-badge { background: rgba(95,163,208,0.16); border: 1px solid rgba(95,163,208,0.45); }
+
+  .rarity-SR .rarity-badge, .rarity-SR .title-line { color: var(--c-sr); }
+  .rarity-SR .rarity-badge { background: rgba(180,120,224,0.18); border: 1px solid rgba(180,120,224,0.5); }
+  .rarity-SR .screen { box-shadow: inset 0 2px 18px rgba(0,0,0,0.8), 0 0 24px -4px rgba(180,120,224,0.35); }
+
+  .rarity-UR .rarity-badge, .rarity-UR .title-line { color: var(--c-ur); }
+  .rarity-UR .rarity-badge { background: rgba(242,183,5,0.18); border: 1px solid rgba(242,183,5,0.55); }
+  .rarity-UR .screen { box-shadow: inset 0 2px 18px rgba(0,0,0,0.8), 0 0 34px -2px rgba(242,183,5,0.45); }
+  .rarity-UR .title-line { text-shadow: 0 0 16px rgba(242,183,5,0.5); }
+
+  @keyframes reveal-in {
+    0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .reveal { animation: reveal-in 0.35s ease-out; }
+
+  @keyframes spin-flicker {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  .spinning .title-line { animation: spin-flicker 0.12s linear infinite; color: var(--text-dim); }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+  }
+
+  .draw-btn {
+    flex: 1;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    color: #1b1208;
+    box-shadow: 0 10px 22px -8px rgba(217,164,65,0.55);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .draw-btn:active { transform: translateY(1px) scale(0.99); }
+  .draw-btn:disabled { opacity: 0.55; cursor: default; box-shadow: none; }
+
+  .icon-btn {
+    width: 48px;
+    padding: 0;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    color: var(--text);
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-btn:hover { border-color: var(--accent); }
+  .icon-btn:disabled { opacity: 0.4; cursor: default; }
+
+  .copy-flash { color: var(--accent); font-size: 12px; text-align: center; margin-top: 8px; height: 14px; }
+
+  /* --- edit section --- */
+
+  details.editor {
+    margin-top: 22px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  details.editor summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text);
+  }
+  details.editor summary::-webkit-details-marker { display: none; }
+  details.editor summary .chev { color: var(--text-dim); font-size: 12px; transition: transform 0.15s ease; }
+  details.editor[open] summary .chev { transform: rotate(90deg); }
+
+  .editor-body { padding: 0 18px 18px; }
+
+  .editor-note {
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    background: var(--bg-2);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 0 0 14px;
+  }
+  .editor-note code {
+    background: rgba(255,255,255,0.07);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: var(--bg-2);
+    border: 1px solid var(--panel-line);
+    color: var(--text-dim);
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .tab-btn.active {
+    background: rgba(217,164,65,0.16);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pool-rows {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .pool-rows.active { display: flex; }
+
+  .pool-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .pool-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    background: var(--screen);
+    color: var(--text);
+    border: 1px solid var(--panel-line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .pool-row input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+  .pool-row select {
+    background: var(--screen);
+    color: var(--text);
+    border: 1px solid var(--panel-line);
+    border-radius: 8px;
+    padding: 8px 4px;
+    font-size: 12.5px;
+    font-family: inherit;
+    width: 62px;
+    flex-shrink: 0;
+  }
+
+  .pool-row input[type="number"] {
+    width: 56px;
+    flex-shrink: 0;
+    background: var(--screen);
+    color: var(--text);
+    border: 1px solid var(--panel-line);
+    border-radius: 8px;
+    padding: 8px 6px;
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+
+  .row-del {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--panel-line);
+    color: var(--warn);
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .row-del:hover { border-color: var(--warn); }
+
+  .add-row-btn {
+    margin-top: 12px;
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    background: var(--bg-2);
+    border: 1px dashed var(--panel-line);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .add-row-btn:disabled { opacity: 0.4; cursor: default; }
+
+  footer.hint {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    margin-top: 20px;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="page-head">
+    <h1>ランダムポケットタイトルガチャ</h1>
+    <p>単語プールから架空のラジオタイトルを引き当てよう</p>
+  </header>
+
+  <div class="config-warning" id="configWarning">
+    &#9888;&#65039; firebaseConfig が未設定です。script内の <code>firebaseConfig</code> を、
+    Firebaseコンソールで取得した実際の値に書き換えてから使ってください（設定するまでガチャ・編集は動きません）。
+  </div>
+
+  <p class="sync-status" id="syncStatus">接続中…</p>
+
+  <section class="set" id="gachaSet">
+    <div class="dial-row">
+      <span class="dial-dot"></span><span class="dial-dot"></span><span class="dial-dot"></span>
+      <span class="dial-dot"></span><span class="dial-dot"></span>
+    </div>
+
+    <div id="resultBox" class="rarity-C">
+      <div class="screen" id="screen">
+        <p class="placeholder-text" id="placeholderText">ボタンを押してガチャを引いてください</p>
+        <div id="resultContent" style="display:none;">
+          <p class="day-line" id="dayLine"></p>
+          <p class="title-line" id="titleLine"></p>
+          <span class="rarity-badge" id="rarityBadge"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="draw-btn" id="drawBtn" disabled>ガチャを引く</button>
+      <button class="icon-btn" id="speakBtn" title="読み上げ" disabled>&#128266;</button>
+      <button class="icon-btn" id="copyBtn" title="コピー" disabled>&#128203;</button>
+    </div>
+    <p class="copy-flash" id="copyFlash"></p>
+  </section>
+
+  <details class="editor">
+    <summary>単語プールを編集する <span class="chev">&#9656;</span></summary>
+    <div class="editor-body">
+      <p class="editor-note">
+        単語プールはクラウド上でみんなと共有されています。ここでの変更は保存操作なしですぐに全員の画面に反映されます。
+        <code>Ctrl+Z</code>（Macは<code>&#8984;+Z</code>）で、自分が直前に行った1つの操作だけを取り消せます
+        （他の人の編集内容までは取り消せません）。
+        EXタブのテンプレート内では <code>{U1}{U2}{U3}</code>（上の句）<code>{L1}{L2}{L3}</code>（下の句）
+        <code>{F1}{F2}{F3}</code>（上の句＋下の句）<code>{W1}〜{W5}</code>（曜日）が使えます。
+      </p>
+
+      <div class="tabs" id="tabRow"></div>
+
+      <div id="poolTables"></div>
+
+      <button class="add-row-btn" id="addRowBtn" type="button" disabled>＋ 単語を追加</button>
+    </div>
+  </details>
+
+  <footer class="hint">
+    このページは静的なHTML1枚 + Firebase Realtime Databaseで完結しています。GitHub Pagesに置けば友達とURLを共有できます。
+  </footer>
+
+</main>
+
+<script>
+/* =========================================================
+   Firebase設定
+   Firebaseコンソール > プロジェクト設定 > 全般 > マイアプリ
+   の firebaseConfig をコピーしてここに貼り付けてください。
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const POOL_NAMES = ["上の句", "下の句", "曜日", "EX"];
+const RARITIES = ["C", "R", "SR", "UR"];
+
+const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+let pools = { "上の句": [], "下の句": [], "曜日": [], "EX": [] };
+let poolKeys = { "上の句": [], "下の句": [], "曜日": [], "EX": [] };
+let db = null;
+
+const configWarning = document.getElementById("configWarning");
+const syncStatus = document.getElementById("syncStatus");
+const drawBtn = document.getElementById("drawBtn");
+const speakBtn = document.getElementById("speakBtn");
+const copyBtn = document.getElementById("copyBtn");
+const addRowBtn = document.getElementById("addRowBtn");
+
+if (!isConfigured) {
+  configWarning.style.display = "block";
+  syncStatus.textContent = "未接続（firebaseConfig未設定）";
+} else {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+
+  db.ref(".info/connected").on("value", (snap) => {
+    const connected = snap.val() === true;
+    syncStatus.textContent = connected ? "みんなと共有中" : "接続中…";
+    syncStatus.classList.toggle("connected", connected);
+    drawBtn.disabled = !connected;
+    addRowBtn.disabled = !connected;
+  });
+
+  POOL_NAMES.forEach((name) => {
+    db.ref("pools/" + name).on("value", (snapshot) => {
+      const val = snapshot.val() || {};
+      const entries = Object.entries(val);
+      pools[name] = entries.map(([, v]) => ({
+        word: v && v.word ? v.word : "",
+        rarity: v && v.rarity ? v.rarity : "C",
+        weight: (v && typeof v.weight === "number" && v.weight > 0) ? v.weight : 1
+      }));
+      poolKeys[name] = entries.map(([k]) => k);
+      refreshTabCounts();
+      if (poolContainers[name]) renderPoolRows(name);
+    });
+  });
+}
+
+/* --- local undo (自分の直前の操作だけを取り消す) --- */
+let undoStack = [];
+const MAX_UNDO = 30;
+
+function pushLocalUndo(entry) {
+  undoStack.push(entry);
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undo() {
+  const entry = undoStack.pop();
+  if (!entry || !db) return;
+  if (entry.type === "field") {
+    db.ref(entry.path).set(entry.prevValue);
+  } else if (entry.type === "add") {
+    db.ref(entry.path).remove();
+  } else if (entry.type === "delete") {
+    db.ref(entry.path).set(entry.prevValue);
+  }
+}
+
+window.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && key === "z" && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+  }
+});
+
+/* --- gacha logic --- */
+
+function weightedPick(pool) {
+  const valid = pool.filter(i => i.weight > 0 && i.word);
+  const total = valid.reduce((sum, i) => sum + i.weight, 0);
+  if (total <= 0 || valid.length === 0) return { word: "", rarity: "C", weight: 1 };
+  let r = Math.random() * total;
+  for (const item of valid) {
+    if (r < item.weight) return item;
+    r -= item.weight;
+  }
+  return valid[valid.length - 1];
+}
+
+function buildResult() {
+  const u = [weightedPick(pools["上の句"]), weightedPick(pools["上の句"]), weightedPick(pools["上の句"])];
+  const l = [weightedPick(pools["下の句"]), weightedPick(pools["下の句"]), weightedPick(pools["下の句"])];
+  const w = [
+    weightedPick(pools["曜日"]), weightedPick(pools["曜日"]), weightedPick(pools["曜日"]),
+    weightedPick(pools["曜日"]), weightedPick(pools["曜日"])
+  ];
+  const ex = weightedPick(pools["EX"]);
+
+  const tags = {};
+  for (let i = 0; i < 3; i++) {
+    tags["U" + (i + 1)] = u[i].word;
+    tags["L" + (i + 1)] = l[i].word;
+    tags["F" + (i + 1)] = u[i].word + l[i].word;
+  }
+  for (let i = 0; i < 5; i++) {
+    tags["W" + (i + 1)] = w[i].word;
+  }
+
+  const title = ex.word.replace(/\{([ULFW]\d)\}/g, (m, key) => (key in tags) ? tags[key] : m);
+  const dayLine = (w[0].word || "？") + "曜ポケット";
+
+  return { dayLine, title, rarity: ex.rarity || "C" };
+}
+
+const resultBox = document.getElementById("resultBox");
+const placeholderText = document.getElementById("placeholderText");
+const resultContent = document.getElementById("resultContent");
+const dayLineEl = document.getElementById("dayLine");
+const titleLineEl = document.getElementById("titleLine");
+const rarityBadgeEl = document.getElementById("rarityBadge");
+const copyFlash = document.getElementById("copyFlash");
+
+let lastResult = null;
+const SPIN_MS = 900;
+const RARITY_ORDER = ["C", "R", "SR", "UR"];
+
+function randomFlickerWord() {
+  const names = ["上の句", "下の句", "EX"];
+  const pool = pools[names[Math.floor(Math.random() * names.length)]];
+  if (!pool || pool.length === 0) return "・・・";
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  return item.word || "・・・";
+}
+
+function drawGacha() {
+  if (!db) return;
+  drawBtn.disabled = true;
+  speakBtn.disabled = true;
+  copyBtn.disabled = true;
+  copyFlash.textContent = "";
+  placeholderText.style.display = "none";
+  resultContent.style.display = "block";
+  resultBox.className = "rarity-C spinning";
+  dayLineEl.textContent = "";
+
+  let flickerTimer = setInterval(() => {
+    titleLineEl.textContent = randomFlickerWord();
+  }, 60);
+
+  setTimeout(() => {
+    clearInterval(flickerTimer);
+    const result = buildResult();
+    lastResult = result;
+
+    const rarityClass = "rarity-" + (RARITY_ORDER.includes(result.rarity) ? result.rarity : "C");
+    resultBox.className = rarityClass + " reveal";
+
+    dayLineEl.textContent = result.dayLine;
+    titleLineEl.textContent = result.title;
+    rarityBadgeEl.textContent = result.rarity;
+
+    drawBtn.disabled = false;
+    speakBtn.disabled = false;
+    copyBtn.disabled = false;
+  }, SPIN_MS);
+}
+
+drawBtn.addEventListener("click", drawGacha);
+
+speakBtn.addEventListener("click", () => {
+  if (!lastResult || !("speechSynthesis" in window)) return;
+  const utter = new SpeechSynthesisUtterance(lastResult.dayLine + "。" + lastResult.title);
+  utter.lang = "ja-JP";
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utter);
+});
+
+copyBtn.addEventListener("click", async () => {
+  if (!lastResult) return;
+  const text = lastResult.dayLine + " " + lastResult.title;
+  try {
+    await navigator.clipboard.writeText(text);
+    copyFlash.textContent = "コピーしました";
+  } catch (e) {
+    copyFlash.textContent = text;
+  }
+  setTimeout(() => { copyFlash.textContent = ""; }, 2000);
+});
+
+/* --- editor (row-based, synced with Firebase) --- */
+
+const tabRow = document.getElementById("tabRow");
+const poolTables = document.getElementById("poolTables");
+
+let activeTab = POOL_NAMES[0];
+const poolContainers = {};
+
+function refreshTabCounts() {
+  [...tabRow.children].forEach(btn => {
+    const name = btn.dataset.name;
+    btn.textContent = name + "（" + pools[name].length + "）";
+  });
+}
+
+function switchTab(name) {
+  activeTab = name;
+  [...tabRow.children].forEach(btn => btn.classList.toggle("active", btn.dataset.name === name));
+  POOL_NAMES.forEach(n => poolContainers[n].classList.toggle("active", n === name));
+}
+
+function buildRow(name, idx) {
+  const item = pools[name][idx];
+  const key = poolKeys[name][idx];
+  const basePath = "pools/" + name + "/" + key;
+  const row = document.createElement("div");
+  row.className = "pool-row";
+
+  const wordInput = document.createElement("input");
+  wordInput.type = "text";
+  wordInput.value = item.word;
+  wordInput.placeholder = "単語を入力";
+  wordInput.addEventListener("change", () => {
+    if (!db) return;
+    pushLocalUndo({ type: "field", path: basePath + "/word", prevValue: item.word });
+    db.ref(basePath + "/word").set(wordInput.value);
+  });
+
+  const raritySelect = document.createElement("select");
+  RARITIES.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = r;
+    if (r === item.rarity) opt.selected = true;
+    raritySelect.appendChild(opt);
+  });
+  raritySelect.addEventListener("change", () => {
+    if (!db) return;
+    pushLocalUndo({ type: "field", path: basePath + "/rarity", prevValue: item.rarity });
+    db.ref(basePath + "/rarity").set(raritySelect.value);
+  });
+
+  const weightInput = document.createElement("input");
+  weightInput.type = "number";
+  weightInput.min = "1";
+  weightInput.value = item.weight;
+  weightInput.title = "重み（大きいほど出やすい）";
+  weightInput.addEventListener("change", () => {
+    if (!db) return;
+    const v = parseFloat(weightInput.value);
+    const safe = (isFinite(v) && v > 0) ? v : 1;
+    weightInput.value = safe;
+    pushLocalUndo({ type: "field", path: basePath + "/weight", prevValue: item.weight });
+    db.ref(basePath + "/weight").set(safe);
+  });
+
+  const delBtn = document.createElement("button");
+  delBtn.type = "button";
+  delBtn.className = "row-del";
+  delBtn.textContent = "\u00d7";
+  delBtn.title = "この単語を削除";
+  delBtn.addEventListener("click", () => {
+    if (!db) return;
+    pushLocalUndo({
+      type: "delete",
+      path: basePath,
+      prevValue: { word: item.word, rarity: item.rarity, weight: item.weight }
+    });
+    db.ref(basePath).remove();
+  });
+
+  row.appendChild(wordInput);
+  row.appendChild(raritySelect);
+  row.appendChild(weightInput);
+  row.appendChild(delBtn);
+  return row;
+}
+
+function renderPoolRows(name) {
+  const container = poolContainers[name];
+  const focused = document.activeElement;
+  const focusedIsInside = container.contains(focused);
+  const focusedIndex = focusedIsInside ? [...container.children].indexOf(focused.closest(".pool-row")) : -1;
+
+  container.innerHTML = "";
+  pools[name].forEach((item, idx) => {
+    container.appendChild(buildRow(name, idx));
+  });
+
+  if (focusedIndex >= 0 && container.children[focusedIndex]) {
+    const input = container.children[focusedIndex].querySelector("input[type='text']");
+    if (input) input.focus();
+  }
+}
+
+function buildPoolTables() {
+  POOL_NAMES.forEach(name => {
+    const tabBtn = document.createElement("button");
+    tabBtn.type = "button";
+    tabBtn.className = "tab-btn" + (name === activeTab ? " active" : "");
+    tabBtn.dataset.name = name;
+    tabBtn.addEventListener("click", () => switchTab(name));
+    tabRow.appendChild(tabBtn);
+
+    const container = document.createElement("div");
+    container.className = "pool-rows" + (name === activeTab ? " active" : "");
+    container.dataset.name = name;
+    poolTables.appendChild(container);
+    poolContainers[name] = container;
+  });
+  refreshTabCounts();
+}
+
+buildPoolTables();
+
+addRowBtn.addEventListener("click", () => {
+  if (!db) return;
+  const newRef = db.ref("pools/" + activeTab).push();
+  const path = "pools/" + activeTab + "/" + newRef.key;
+  pushLocalUndo({ type: "add", path });
+  newRef.set({ word: "", rarity: "C", weight: 10 });
+});
+</script>
+</body>
+</html>
