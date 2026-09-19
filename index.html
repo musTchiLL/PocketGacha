@@ -701,7 +701,20 @@ function buildResult() {
   const title = ex.word.replace(/\{([ULFW]\d)\}/g, (m, key) => (key in tags) ? tags[key] : m);
   const dayLine = (w[0].word || "？") + "曜ポケット";
 
-  return { dayLine, title, rarity: ex.rarity || "C" };
+  const rarityValue = {
+  C: 0,
+  R: 1,
+  SR: 2,
+  UR: 3
+};
+
+const rarity = [u[0].rarity, l[0].rarity, ex.rarity]
+  .filter(r => r)
+  .reduce((highest, r) =>
+    rarityValue[r] > rarityValue[highest] ? r : highest
+  , "C");
+
+return { dayLine, title, rarity };
 }
 
 const resultBox = document.getElementById("resultBox");
