@@ -571,7 +571,7 @@ if (!isConfigured) {
 
   db.ref(".info/connected").on("value", (snap) => {
     const connected = snap.val() === true;
-    syncStatus.textContent = connected ? "みんなと共有中" : "接続中…";
+    syncStatus.textContent = connected ? "単語プールの読み込み成功" : "接続中…";
     syncStatus.classList.toggle("connected", connected);
     drawBtn.disabled = !connected;
     addRowBtn.disabled = !connected;
