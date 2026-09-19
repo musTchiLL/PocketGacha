@@ -542,7 +542,7 @@ const SHOW_RATE_POOLS = ["上の句", "下の句","曜日", "EX"];
    EXタブだけ他のタブと基準が異なる。 */
 const RARITY_WEIGHTS = {
   default: { C: 10, R: 5, SR: 3, UR: 1 },
-  EX: { C: 100, R: 10, SR: 5, UR: 1 }
+  EX: { C: 300, R: 10, SR: 5, UR: 1 }
 };
 function weightForRarity(poolName, rarity) {
   const table = (poolName === "EX") ? RARITY_WEIGHTS.EX : RARITY_WEIGHTS.default;
