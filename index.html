@@ -717,7 +717,7 @@ const SPIN_MS = 900;
 const RARITY_ORDER = ["C", "R", "SR", "UR"];
 
 function randomFlickerWord() {
-  const names = ["上の句", "下の句", "EX"];
+  const names = ["上の句", "下の句"];
   const pool = pools[names[Math.floor(Math.random() * names.length)]];
   if (!pool || pool.length === 0) return "・・・";
   const item = pool[Math.floor(Math.random() * pool.length)];
